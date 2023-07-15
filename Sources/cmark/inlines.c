@@ -422,9 +422,8 @@ static bufsize_t scan_to_closing_inline_latex(subject *subj) {
 
 static bufsize_t scan_to_closing_display_latex(subject *subj) {
   bufsize_t startpos = subj->pos;
-  int maxCharsToScan = 1000;
   int i = 0;
-  while (peek_char(subj) != '\0' && i < maxCharsToScan) {
+  while (peek_char(subj) != '\0' && i < MAXLATEXCHARS) {
     if (peek_char(subj) == '\\' && subj->pos + 1 < subj->input.len && peek_at(subj, subj->pos + 1) == ']') {
       advance(subj);
       return subj->pos + 1;
@@ -953,7 +952,6 @@ static cmark_node *handle_backslash(subject *subj, int options) {
   if (cmark_ispunct(
           nextchar)) { // only ascii symbols and newline can be escaped
     advance(subj);
-              printf("next char:%c", nextchar);
     if (nextchar == '(') {
       bufsize_t initpos = subj->pos;
       bufsize_t startpos = subj->pos;
@@ -1446,10 +1444,10 @@ static cmark_node *handle_newline(subject *subj) {
 }
 
 static bufsize_t subject_find_special_char(subject *subj, int options) {
-  // "\r\n\\`&_*[]<!"
+  // "\r\n\\`&_*[]<!$"
   static const int8_t SPECIAL_CHARS[256] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1,
       1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
