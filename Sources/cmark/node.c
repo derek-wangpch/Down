@@ -209,6 +209,10 @@ const char *cmark_node_get_type_string(cmark_node *node) {
     return "link";
   case CMARK_NODE_IMAGE:
     return "image";
+  case CMARK_NODE_LATEX_BLOCK:
+    return "latex_block";
+  case CMARK_NODE_LATEX_INLINE:
+    return "latex_inline";
   }
 
   return "<unknown>";
@@ -301,6 +305,8 @@ const char *cmark_node_get_literal(cmark_node *node) {
   case CMARK_NODE_HTML_INLINE:
   case CMARK_NODE_CODE:
   case CMARK_NODE_CODE_BLOCK:
+  case CMARK_NODE_LATEX_INLINE:
+  case CMARK_NODE_LATEX_BLOCK:
     return node->data ? (char *)node->data : "";
 
   default:
@@ -321,6 +327,8 @@ int cmark_node_set_literal(cmark_node *node, const char *content) {
   case CMARK_NODE_HTML_INLINE:
   case CMARK_NODE_CODE:
   case CMARK_NODE_CODE_BLOCK:
+  case CMARK_NODE_LATEX_INLINE:
+  case CMARK_NODE_LATEX_BLOCK:
     node->len = cmark_set_cstr(node->mem, &node->data, content);
     return 1;
 
