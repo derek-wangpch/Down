@@ -15,6 +15,8 @@
 		14954EA621A7DCBA001933C4 /* README-sample.md in Resources */ = {isa = PBXBuildFile; fileRef = 14954EA421A7DCA3001933C4 /* README-sample.md */; };
 		651B3EF02A610BE700DB2EFF /* Down.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 651B3EED2A610BD500DB2EFF /* Down.framework */; };
 		651B3EF52A610C4400DB2EFF /* Down.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 651B3EED2A610BD500DB2EFF /* Down.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		651B3EFB2A625B5E00DB2EFF /* Latex.md in Resources */ = {isa = PBXBuildFile; fileRef = 651B3EFA2A625B5E00DB2EFF /* Latex.md */; };
+		651B3EFC2A625B5E00DB2EFF /* Latex.md in Resources */ = {isa = PBXBuildFile; fileRef = 651B3EFA2A625B5E00DB2EFF /* Latex.md */; };
 		8A07D7D31F085EC6004D7141 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A07D7D21F085EC6004D7141 /* AppDelegate.swift */; };
 		8A07D7D51F085EC6004D7141 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A07D7D41F085EC6004D7141 /* ViewController.swift */; };
 		8A07D7D81F085EC6004D7141 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8A07D7D61F085EC6004D7141 /* Main.storyboard */; };
@@ -87,6 +89,7 @@
 		14090A5E2185443800503C06 /* macOS Demo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "macOS Demo.entitlements"; sourceTree = "<group>"; };
 		14954EA421A7DCA3001933C4 /* README-sample.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "README-sample.md"; sourceTree = "<group>"; };
 		651B3EE72A610BD400DB2EFF /* Down.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Down.xcodeproj; path = ../Down.xcodeproj; sourceTree = "<group>"; };
+		651B3EFA2A625B5E00DB2EFF /* Latex.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Latex.md; sourceTree = "<group>"; };
 		8A07D7CF1F085EC6004D7141 /* Down-Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Down-Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A07D7D21F085EC6004D7141 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		8A07D7D41F085EC6004D7141 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -139,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				14954EA421A7DCA3001933C4 /* README-sample.md */,
+				651B3EFA2A625B5E00DB2EFF /* Latex.md */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -303,6 +307,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				14090A502185411A00503C06 /* Assets.xcassets in Resources */,
+				651B3EFC2A625B5E00DB2EFF /* Latex.md in Resources */,
 				14090A532185411A00503C06 /* Main.storyboard in Resources */,
 				14954EA521A7DCB9001933C4 /* README-sample.md in Resources */,
 			);
@@ -315,6 +320,7 @@
 				14954EA621A7DCBA001933C4 /* README-sample.md in Resources */,
 				8A07D7DD1F085EC6004D7141 /* LaunchScreen.storyboard in Resources */,
 				8A07D7DA1F085EC6004D7141 /* Assets.xcassets in Resources */,
+				651B3EFB2A625B5E00DB2EFF /* Latex.md in Resources */,
 				8A07D7D81F085EC6004D7141 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

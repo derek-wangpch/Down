@@ -191,6 +191,14 @@ open class DownStyler: Styler {
         styleGenericLink(in: str, url: url)
     }
 
+    open func style(latexBlock str: NSMutableAttributedString) {
+        self.style(text: str)
+    }
+
+    open func style(latexInline str: NSMutableAttributedString) {
+        self.style(text: str)        
+    }
+
     // MARK: - Common Styling
 
     private func styleGenericCodeBlock(in str: NSMutableAttributedString) {
