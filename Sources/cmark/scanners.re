@@ -349,7 +349,6 @@ bufsize_t _scan_open_latex_fence(const unsigned char *p)
   const unsigned char *start = p;
 /*!re2c
   [$]{2,} / [^$\r\n\x00]*[\r\n] { return (bufsize_t)(p - start); }
-  [\\] [[]  / [^\r\n\x00]*[\r\n] { return (bufsize_t)(p - start); }
   * { return 0; }
 */
 }
@@ -361,7 +360,6 @@ bufsize_t _scan_close_latex_fence(const unsigned char *p)
   const unsigned char *start = p;
 /*!re2c
   [$]{2,} / [ \t]*[\r\n] { return (bufsize_t)(p - start); }
-  [\\] [\]] / [ \t]*[\r\n] { return (bufsize_t)(p - start); }
   * { return 0; }
 */
 }
