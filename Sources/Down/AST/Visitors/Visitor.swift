@@ -37,7 +37,8 @@ public protocol Visitor {
     func visit(link node: Link) -> Result
     func visit(image node: Image) -> Result
     func visitChildren(of node: Node) -> [Result]
-
+    func visit(latexBlock node: LatexBlock) -> Result
+    func visit(latexInline node: LatexInline) -> Result
 }
 
 extension Visitor {
@@ -65,6 +66,8 @@ extension Visitor {
             case let child as Strong:         return visit(strong: child)
             case let child as Link:           return visit(link: child)
             case let child as Image:          return visit(image: child)
+            case let child as LatexBlock:     return visit(latexBlock: child)
+            case let child as LatexInline:    return visit(latexInline: child)
             default:
                 assertionFailure("Unexpected child")
                 return nil

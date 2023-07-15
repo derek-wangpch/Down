@@ -31,6 +31,14 @@ typedef struct {
 } cmark_code;
 
 typedef struct {
+  unsigned char *info;
+  uint8_t fence_length;
+  uint8_t fence_offset;
+  unsigned char fence_char;
+  int8_t fenced;
+} cmark_latex;
+
+typedef struct {
   int internal_offset;
   int8_t level;
   bool setext;
@@ -80,6 +88,7 @@ struct cmark_node {
     cmark_link link;
     cmark_custom custom;
     int html_block_type;
+    cmark_latex latex;
   } as;
 };
 

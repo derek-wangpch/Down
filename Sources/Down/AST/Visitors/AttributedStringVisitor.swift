@@ -188,6 +188,20 @@ extension AttributedStringVisitor: Visitor {
         styler.style(image: result, title: node.title, url: node.url)
         return result
     }
+
+    public func visit(latexBlock node: LatexBlock) -> NSMutableAttributedString {
+        guard let literal = node.literal else { return .empty }
+        let result = literal.replacingNewlinesWithLineSeparators().attributed
+        if node.hasSuccessor { result.append(.paragraphSeparator) }
+        styler.style(latexBlock: result)
+        return result
+    }
+
+    public func visit(latexInline node: LatexInline) -> NSMutableAttributedString {
+        guard let result = node.literal?.attributed else { return .empty }
+        styler.style(latexInline: result)
+        return result
+    }
 }
 
 // MARK: - Helper extensions

@@ -186,4 +186,8 @@ public protocol Styler {
 
     func style(image str: NSMutableAttributedString, title: String?, url: String?)
 
+    func style(latexBlock str: NSMutableAttributedString)
+
+    func style(latexInline str: NSMutableAttributedString)
+
 }

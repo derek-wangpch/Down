@@ -28,6 +28,7 @@ static const char *RIGHTSINGLEQUOTE = "\xE2\x80\x99";
 #define make_strong(mem) make_simple(mem, CMARK_NODE_STRONG)
 
 #define MAXBACKTICKS 1000
+#define MAXLATEXDOLLARS 500
 
 typedef struct delimiter {
   struct delimiter *previous;
@@ -68,6 +69,8 @@ typedef struct {
   bufsize_t backticks[MAXBACKTICKS + 1];
   bool scanned_for_backticks;
   bool no_link_openers;
+  bufsize_t latexDollars[MAXLATEXDOLLARS + 1];
+  bool scanned_for_latexDollars;
 } subject;
 
 static CMARK_INLINE bool S_is_line_end_char(char c) {
@@ -209,10 +212,15 @@ static void subject_from_buf(cmark_mem *mem, int line_number, int block_offset, 
     e->backticks[i] = 0;
   }
   e->scanned_for_backticks = false;
+    for (i = 0; i <= MAXLATEXDOLLARS; i++) {
+    e->latexDollars[i] = 0;
+  }
+  e->scanned_for_latexDollars = false;
   e->no_link_openers = true;
 }
 
 static CMARK_INLINE int isbacktick(int c) { return (c == '`'); }
+static CMARK_INLINE int isLatexDollar(int c) { return (c == '$'); }
 
 static CMARK_INLINE unsigned char peek_char(subject *subj) {
   // NULL bytes should have been stripped out by now.  If they're
@@ -355,6 +363,64 @@ static bufsize_t scan_to_closing_backticks(subject *subj,
   return 0;
 }
 
+// Similar to scan_to_closing_backticks, but for latex $ signs
+static bufsize_t scan_to_closing_latex_dollars(subject *subj,
+                                           bufsize_t openticklength) {
+
+  bool found = false;
+  if (openticklength > MAXLATEXDOLLARS) {
+    // we limit backtick string length because of the array subj->latexDollars:
+    return 0;
+  }
+  if (subj->scanned_for_latexDollars &&
+      subj->latexDollars[openticklength] <= subj->pos) {
+    // return if we already know there's no closer
+    return 0;
+  }
+  while (!found) {
+    // read non dollars
+    unsigned char c;
+    while ((c = peek_char(subj)) && c != '$') {
+      advance(subj);
+    }
+    if (is_eof(subj)) {
+      break;
+    }
+    bufsize_t numticks = 0;
+    while (peek_char(subj) == '$') {
+      advance(subj);
+      numticks++;
+    }
+    // store position of ender
+    if (numticks <= MAXLATEXDOLLARS) {
+      subj->latexDollars[numticks] = subj->pos - numticks;
+    }
+    if (numticks == openticklength) {
+      return (subj->pos);
+    }
+  }
+  // got through whole input without finding closer
+  subj->scanned_for_latexDollars = true;
+  return 0;
+}
+
+// For latex \) end tags
+static bufsize_t scan_to_closing_inline_latex(subject *subj) {
+  bufsize_t startpos = subj->pos;
+  int maxCharsToScan = 200;
+  int i = 0;
+  while (peek_char(subj) != '\0' && i < maxCharsToScan) {
+    if (peek_char(subj) == '\\' && subj->pos + 1 < subj->input.len && peek_at(subj, subj->pos + 1) == ')') {
+      advance(subj);
+      return subj->pos + 1;
+    }
+    advance(subj);
+    i++;
+  }
+
+  return 0;
+}
+
 // Destructively modify string, converting newlines to
 // spaces, then removing a single leading + trailing space,
 // unless the code span consists entirely of space characters.
@@ -417,6 +483,58 @@ static cmark_node *handle_backticks(subject *subj, int options) {
     adjust_subj_node_newlines(subj, node, endpos - startpos, openticks.len, options);
     return node;
   }
+}
+
+static cmark_node *handle_latex_dollar(subject *subj, int options) {
+  bufsize_t initpos = subj->pos;
+  cmark_chunk openticks = take_while(subj, isLatexDollar);
+  bufsize_t startpos = subj->pos;
+  bufsize_t endpos = scan_to_closing_latex_dollars(subj, openticks.len);
+
+  if (endpos == 0) {      // not found
+    subj->pos = startpos; // rewind
+    return make_str(subj, initpos, initpos + openticks.len - 1, openticks);
+  } else {
+    cmark_strbuf buf = CMARK_BUF_INIT(subj->mem);
+    cmark_strbuf_set(&buf, subj->input.data + startpos,
+                     endpos - startpos - openticks.len);
+    S_normalize_code(&buf);
+
+    cmark_node *node = make_literal(subj, CMARK_NODE_LATEX_INLINE, startpos,
+                                    endpos - openticks.len - 1);
+    node->len = buf.size;
+    node->data = cmark_strbuf_detach(&buf);
+    adjust_subj_node_newlines(subj, node, endpos - startpos, openticks.len, options);
+    return node;
+  }
+  // bufsize_t numdollar = 1;
+  // bufsize_t startpos = subj->pos;
+  // bufsize_t endpos;
+
+  // while (peek_char(subj) == '$') {
+  //   advance(subj);
+  //   numdollar++;
+  // }
+
+  // endpos = subj->pos;
+
+  // if (numdollar == 3) {
+  //   cmark_node *node = make_literal(subj, CMARK_NODE_LATEX_BLOCK, startpos,
+  //                                   endpos - 1);
+  //   node->len = endpos - startpos - 2;
+  //   node->data = cmark_strndup(subj->input.data + startpos + 1,
+  //                              endpos - startpos - 3);
+  //   adjust_subj_node_newlines(subj, node, endpos - startpos, 0, options);
+  //   return node;
+  // } else {
+  //   cmark_node *node = make_literal(subj, CMARK_NODE_LATEX_INLINE, startpos,
+  //                                   endpos - 1);
+  //   node->len = endpos - startpos - 2;
+  //   node->data = cmark_strndup(subj->input.data + startpos + 1,
+  //                              endpos - startpos - 3);
+  //   adjust_subj_node_newlines(subj, node, endpos - startpos, 0, options);
+  //   return node;
+  // }
 }
 
 
@@ -814,12 +932,35 @@ static delimiter *S_insert_emph(subject *subj, delimiter *opener,
 }
 
 // Parse backslash-escape or just a backslash, returning an inline.
-static cmark_node *handle_backslash(subject *subj) {
+static cmark_node *handle_backslash(subject *subj, int options) {
   advance(subj);
   unsigned char nextchar = peek_char(subj);
   if (cmark_ispunct(
           nextchar)) { // only ascii symbols and newline can be escaped
     advance(subj);
+    if (nextchar == '(') {
+      bufsize_t initpos = subj->pos;
+      bufsize_t startpos = subj->pos;
+      bufsize_t endpos = scan_to_closing_inline_latex(subj);
+      if (endpos == 0) {      // not found
+        subj->pos = startpos; // rewind
+        return make_str(subj, subj->pos - 2, subj->pos - 1, cmark_chunk_dup(&subj->input, subj->pos - 1, 1));
+      } else {
+        cmark_strbuf buf = CMARK_BUF_INIT(subj->mem);
+        int extra = 2;
+        cmark_strbuf_set(&buf, subj->input.data + startpos,
+                         endpos - startpos - extra);
+        S_normalize_code(&buf);
+
+        cmark_node *node = make_literal(subj, CMARK_NODE_LATEX_INLINE, startpos,
+                                        endpos - extra - 1);
+        node->len = buf.size;
+        node->data = cmark_strbuf_detach(&buf);
+        advance(subj);
+        adjust_subj_node_newlines(subj, node, endpos - startpos, extra, options);
+        return node;
+      }
+    }
     return make_str(subj, subj->pos - 2, subj->pos - 1, cmark_chunk_dup(&subj->input, subj->pos - 1, 1));
   } else if (!is_eof(subj) && skip_line_end(subj)) {
     return make_linebreak(subj->mem);
@@ -1326,8 +1467,11 @@ static int parse_inline(subject *subj, cmark_node *parent, int options) {
   case '`':
     new_inl = handle_backticks(subj, options);
     break;
+  case '$':
+    new_inl = handle_latex_dollar(subj, options);
+    break;
   case '\\':
-    new_inl = handle_backslash(subj);
+    new_inl = handle_backslash(subj, options);
     break;
   case '&':
     new_inl = handle_entity(subj);

@@ -60,6 +60,7 @@ static int S_render_node(cmark_node *node, cmark_event_type ev_type,
     switch (node->type) {
     case CMARK_NODE_TEXT:
     case CMARK_NODE_CODE:
+    case CMARK_NODE_LATEX_INLINE:
     case CMARK_NODE_HTML_INLINE:
       escape_html(html, node->data, node->len);
       break;
@@ -312,7 +313,35 @@ static int S_render_node(cmark_node *node, cmark_event_type ev_type,
       cmark_strbuf_puts(html, "\" />");
     }
     break;
+  case CMARK_NODE_LATEX_BLOCK:
+    cr(html);
+  
+    if (node->as.latex.info == NULL || node->as.latex.info[0] == 0) {
+      cmark_strbuf_puts(html, "<pre");
+      S_render_sourcepos(node, html, options);
+      cmark_strbuf_puts(html, "><code>");
+    } else {
+      bufsize_t first_tag = 0;
+      while (node->as.latex.info[first_tag] &&
+             !cmark_isspace(node->as.latex.info[first_tag])) {
+        first_tag += 1;
+      }
 
+      cmark_strbuf_puts(html, "<pre");
+      S_render_sourcepos(node, html, options);
+      cmark_strbuf_puts(html, "><code class=\"language-");
+      escape_html(html, node->as.latex.info, first_tag);
+      cmark_strbuf_puts(html, "\">");
+    }
+
+    escape_html(html, node->data, node->len);
+    cmark_strbuf_puts(html, "</code></pre>\n");
+    break;
+  case CMARK_NODE_LATEX_INLINE:
+    cmark_strbuf_puts(html, "<code>");
+    escape_html(html, node->data, node->len);
+    cmark_strbuf_puts(html, "</code>");
+    break;
   default:
     assert(false);
     break;

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cmark.h"
 #include "config.h"
 #include "node.h"
 
@@ -111,10 +112,15 @@ static void S_free_nodes(cmark_node *e) {
       mem->free(e->data);
       mem->free(e->as.code.info);
       break;
+    case CMARK_NODE_LATEX_BLOCK:
+      mem->free(e->data);
+      mem->free(e->as.latex.info);
+      break;
     case CMARK_NODE_TEXT:
     case CMARK_NODE_HTML_INLINE:
     case CMARK_NODE_CODE:
     case CMARK_NODE_HTML_BLOCK:
+    case CMARK_NODE_LATEX_INLINE:
       mem->free(e->data);
       break;
     case CMARK_NODE_LINK:

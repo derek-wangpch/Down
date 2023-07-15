@@ -342,3 +342,27 @@ bufsize_t _scan_dangerous_url(const unsigned char *p)
 */
 }
 
+// Scan an opening latex fence: $$ or \[ or \begin{foo}.
+bufsize_t _scan_open_latex_fence(const unsigned char *p)
+{
+  const unsigned char *marker = NULL;
+  const unsigned char *start = p;
+/*!re2c
+  [$]{2,} / [^$\r\n\x00]*[\r\n] { return (bufsize_t)(p - start); }
+  [\\] [[]  / [^\r\n\x00]*[\r\n] { return (bufsize_t)(p - start); }
+  * { return 0; }
+*/
+}
+
+// Scan a close latex fence: $$ or \] or \end{foo}.
+bufsize_t _scan_close_latex_fence(const unsigned char *p)
+{
+  const unsigned char *marker = NULL;
+  const unsigned char *start = p;
+/*!re2c
+  [$]{2,} / [ \t]*[\r\n] { return (bufsize_t)(p - start); }
+  [\\] [\]] / [ \t]*[\r\n] { return (bufsize_t)(p - start); }
+  * { return 0; }
+*/
+}
+

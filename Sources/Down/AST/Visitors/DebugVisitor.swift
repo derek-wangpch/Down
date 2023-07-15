@@ -122,4 +122,12 @@ public class DebugVisitor: Visitor {
         return reportWithChildren(node)
     }
 
+    public func visit(latexBlock node: LatexBlock) -> String {
+        return reportWithChildren(node)
+    }
+
+    public func visit(latexInline node: LatexInline) -> String {
+        return report(node)
+    }
+
 }

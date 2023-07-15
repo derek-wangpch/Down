@@ -166,7 +166,8 @@ static CMARK_INLINE bool can_contain(cmark_node_type parent_type,
 static CMARK_INLINE bool accepts_lines(cmark_node_type block_type) {
   return (block_type == CMARK_NODE_PARAGRAPH ||
           block_type == CMARK_NODE_HEADING ||
-          block_type == CMARK_NODE_CODE_BLOCK);
+          block_type == CMARK_NODE_CODE_BLOCK ||
+          block_type == CMARK_NODE_LATEX_BLOCK);
 }
 
 static CMARK_INLINE bool contains_inlines(cmark_node_type block_type) {
@@ -265,6 +266,7 @@ static cmark_node *finalize(cmark_parser *parser, cmark_node *b) {
     b->end_column = parser->last_line_length;
   } else if (S_type(b) == CMARK_NODE_DOCUMENT ||
              (S_type(b) == CMARK_NODE_CODE_BLOCK && b->as.code.fenced) ||
+             (S_type(b) == CMARK_NODE_LATEX_BLOCK && b->as.latex.fenced) ||
              (S_type(b) == CMARK_NODE_HEADING && b->as.heading.setext)) {
     b->end_line = parser->line_number;
     b->end_column = parser->curline.size;
@@ -313,6 +315,38 @@ static cmark_node *finalize(cmark_parser *parser, cmark_node *b) {
         cmark_strbuf_trim(&tmp);
         cmark_strbuf_unescape(&tmp);
         b->as.code.info = cmark_strbuf_detach(&tmp);
+      }
+
+      if (node_content->ptr[pos] == '\r')
+        pos += 1;
+      if (node_content->ptr[pos] == '\n')
+        pos += 1;
+      cmark_strbuf_drop(node_content, pos);
+    }
+    b->len = node_content->size;
+    b->data = cmark_strbuf_detach(node_content);
+    break;
+    
+  case CMARK_NODE_LATEX_BLOCK:
+    if (!b->as.latex.fenced) { // indented latex
+      remove_trailing_blank_lines(node_content);
+      cmark_strbuf_putc(node_content, '\n');
+    } else {
+      // first line of contents becomes info
+      for (pos = 0; pos < node_content->size; ++pos) {
+        if (S_is_line_end_char(node_content->ptr[pos]))
+          break;
+      }
+      assert(pos < node_content->size);
+
+      if (pos == 0) {
+        b->as.latex.info = NULL;
+      } else {
+        cmark_strbuf tmp = CMARK_BUF_INIT(parser->mem);
+        houdini_unescape_html_f(&tmp, node_content->ptr, pos);
+        cmark_strbuf_trim(&tmp);
+        cmark_strbuf_unescape(&tmp);
+        b->as.latex.info = cmark_strbuf_detach(&tmp);
       }
 
       if (node_content->ptr[pos] == '\r')
@@ -854,6 +888,49 @@ static bool parse_code_block_prefix(cmark_parser *parser, cmark_chunk *input,
   return res;
 }
 
+static bool parse_latex_block_prefix(cmark_parser *parser, cmark_chunk *input,
+                                    cmark_node *container,
+                                    bool *should_continue) {
+  bool res = false;
+
+  if (!container->as.latex.fenced) { // indented
+    if (parser->indent >= CODE_INDENT) {
+      S_advance_offset(parser, input, CODE_INDENT, true);
+      res = true;
+    } else if (parser->blank) {
+      S_advance_offset(parser, input, parser->first_nonspace - parser->offset,
+                       false);
+      res = true;
+    }
+  } else { // fenced
+    bufsize_t matched = 0;
+
+    if (parser->indent <= 3 && (peek_at(input, parser->first_nonspace) ==
+                                container->as.latex.fence_char)) {
+      matched = scan_close_latex_fence(input, parser->first_nonspace);
+    }
+
+    if (matched >= container->as.latex.fence_length) {
+      // closing fence - and since we're at
+      // the end of a line, we can stop processing it:
+      *should_continue = false;
+      S_advance_offset(parser, input, matched, false);
+      parser->current = finalize(parser, container);
+    } else {
+      // skip opt. spaces of fence parser->offset
+      int i = container->as.latex.fence_offset;
+
+      while (i > 0 && S_is_space_or_tab(peek_at(input, parser->offset))) {
+        S_advance_offset(parser, input, 1, true);
+        i--;
+      }
+      res = true;
+    }
+  }
+
+  return res;
+}
+
 static bool parse_html_block_prefix(cmark_parser *parser,
                                     cmark_node *container) {
   bool res = false;
@@ -912,6 +989,10 @@ static cmark_node *check_open_blocks(cmark_parser *parser, cmark_chunk *input,
       if (!parse_code_block_prefix(parser, input, container, &should_continue))
         goto done;
       break;
+    case CMARK_NODE_LATEX_BLOCK:
+      if (!parse_latex_block_prefix(parser, input, container, &should_continue))
+        goto done;
+      break;
     case CMARK_NODE_HEADING:
       // a heading can never contain more than one line
       goto done;
@@ -956,6 +1037,7 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
   int save_column;
 
   while (cont_type != CMARK_NODE_CODE_BLOCK &&
+         cont_type != CMARK_NODE_LATEX_BLOCK &&
          cont_type != CMARK_NODE_HTML_BLOCK) {
 
     S_find_first_nonspace(parser, input);
@@ -1007,6 +1089,20 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
       (*container)->as.code.fence_offset =
           (int8_t)(parser->first_nonspace - parser->offset);
       (*container)->as.code.info = NULL;
+      S_advance_offset(parser, input,
+                       parser->first_nonspace + matched - parser->offset,
+                       false);
+
+    } else if (!indented && (matched = scan_open_latex_fence(
+                                 input, parser->first_nonspace))) {
+      *container = add_child(parser, *container, CMARK_NODE_LATEX_BLOCK,
+                             parser->first_nonspace + 1);
+      (*container)->as.latex.fenced = true;
+      (*container)->as.latex.fence_char = peek_at(input, parser->first_nonspace);
+      (*container)->as.latex.fence_length = (matched > 255) ? 255 : matched;
+      (*container)->as.latex.fence_offset =
+          (int8_t)(parser->first_nonspace - parser->offset);
+      (*container)->as.latex.info = NULL;
       S_advance_offset(parser, input,
                        parser->first_nonspace + matched - parser->offset,
                        false);
@@ -1146,6 +1242,7 @@ static void add_text_to_container(cmark_parser *parser, cmark_node *container,
       (parser->blank && ctype != CMARK_NODE_BLOCK_QUOTE &&
        ctype != CMARK_NODE_HEADING && ctype != CMARK_NODE_THEMATIC_BREAK &&
        !(ctype == CMARK_NODE_CODE_BLOCK && container->as.code.fenced) &&
+       !(ctype == CMARK_NODE_LATEX_BLOCK && container->as.latex.fenced) &&
        !(ctype == CMARK_NODE_ITEM && container->first_child == NULL &&
          container->start_line == parser->line_number));
 
@@ -1175,6 +1272,8 @@ static void add_text_to_container(cmark_parser *parser, cmark_node *container,
     }
 
     if (S_type(container) == CMARK_NODE_CODE_BLOCK) {
+      add_line(input, parser);
+    } else if (S_type(container) == CMARK_NODE_LATEX_BLOCK) {
       add_line(input, parser);
     } else if (S_type(container) == CMARK_NODE_HTML_BLOCK) {
       add_line(input, parser);

@@ -69,6 +69,8 @@ public extension CMarkNode {
         case CMARK_NODE_STRONG:         return Strong(cmarkNode: self)
         case CMARK_NODE_LINK:           return Link(cmarkNode: self)
         case CMARK_NODE_IMAGE:          return Image(cmarkNode: self)
+        case CMARK_NODE_LATEX_BLOCK:    return LatexBlock(cmarkNode: self)
+        case CMARK_NODE_LATEX_INLINE:   return LatexInline(cmarkNode: self)
         default:                        return nil
         }
     }
