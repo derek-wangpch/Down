@@ -17,11 +17,11 @@ public class LatexBlock: BaseNode {
 
     public private(set) lazy var literal: String? = cmarkNode.literal
 
-    /// TODO: remove fenceInfo, this is copied from CodeBlock, LatexBlock has no fence info (except \begin{foo}, but it is not supported now)
-    /// $$
-    /// $$
-    public private(set) lazy var fenceInfo: String? = cmarkNode.fenceInfo
-
+    // $$ or \[
+    public private(set) lazy var prefixFence : String? = cmarkNode.prefixFence
+    
+    // $$ or \]
+    public private(set) lazy var suffixFence : String? = cmarkNode.suffixFence
 }
 
 // MARK: - Debug
@@ -30,7 +30,7 @@ extension LatexBlock: CustomDebugStringConvertible {
 
     public var debugDescription: String {
         let content = (literal ?? "nil").replacingOccurrences(of: "\n", with: "\\n")
-        return "Code Block - fenceInfo: \(fenceInfo ?? "nil"), content: \(content)"
+        return "Latex Block - prefixFence: \(prefixFence ?? "nil"), content: \(content), sufficFence: \(suffixFence ?? "nil")"
     }
 
 }

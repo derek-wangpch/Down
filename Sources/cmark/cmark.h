@@ -540,6 +540,14 @@ char *cmark_render_commonmark(cmark_node *root, int options, int width);
 CMARK_EXPORT
 char *cmark_render_latex(cmark_node *root, int options, int width);
 
+/** Returns the prefix fence string from a latex block/inline
+ */
+CMARK_EXPORT const char *cmark_node_get_prefix_fence(cmark_node *node);
+
+/** Returns the suffix fence string from a latex block/inline
+ */
+CMARK_EXPORT const char *cmark_node_get_suffix_fence(cmark_node *node);
+
 /**
  * ## Options
  */

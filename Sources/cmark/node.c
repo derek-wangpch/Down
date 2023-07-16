@@ -114,14 +114,23 @@ static void S_free_nodes(cmark_node *e) {
       break;
     case CMARK_NODE_LATEX_BLOCK:
       mem->free(e->data);
-      mem->free(e->as.latex.info);
+      mem->free(e->as.latex.fence_prefix);
+      if (e->as.latex.fence_suffix != NULL && e->as.latex.fence_suffix != e->as.latex.fence_prefix) {
+        mem->free(e->as.latex.fence_suffix);
+      }
       break;
     case CMARK_NODE_TEXT:
     case CMARK_NODE_HTML_INLINE:
     case CMARK_NODE_CODE:
     case CMARK_NODE_HTML_BLOCK:
+      mem->free(e->data);
+      break;
     case CMARK_NODE_LATEX_INLINE:
       mem->free(e->data);
+      mem->free(e->as.latex.fence_prefix);
+      if (e->as.latex.fence_suffix != NULL && e->as.latex.fence_suffix != e->as.latex.fence_prefix) {
+        mem->free(e->as.latex.fence_suffix);
+      }
       break;
     case CMARK_NODE_LINK:
     case CMARK_NODE_IMAGE:
@@ -487,6 +496,30 @@ const char *cmark_node_get_fence_info(cmark_node *node) {
 
   if (node->type == CMARK_NODE_CODE_BLOCK) {
     return node->as.code.info ? (char *)node->as.code.info : "";
+  } else {
+    return NULL;
+  }
+}
+
+const char *cmark_node_get_prefix_fence(cmark_node *node) {
+  if (node == NULL) {
+    return NULL;
+  }
+
+  if (node->type == CMARK_NODE_LATEX_BLOCK || node->type == CMARK_NODE_LATEX_INLINE) {
+    return node->as.latex.fence_prefix ? (char *)node->as.latex.fence_prefix : "";
+  } else {
+    return NULL;
+  }
+}
+
+const char *cmark_node_get_suffix_fence(cmark_node *node) {
+  if (node == NULL) {
+    return NULL;
+  }
+
+  if (node->type == CMARK_NODE_LATEX_BLOCK || node->type == CMARK_NODE_LATEX_INLINE) {
+    return node->as.latex.fence_suffix ? (char *)node->as.latex.fence_suffix : "";
   } else {
     return NULL;
   }

@@ -16,6 +16,12 @@ public class LatexInline: BaseNode {
     /// The code content, if present.
 
     public private(set) lazy var literal: String? = cmarkNode.literal
+    
+    // $$ or \(
+    public private(set) lazy var prefixFence : String? = cmarkNode.prefixFence
+    
+    // $$ or \)
+    public private(set) lazy var suffixFence : String? = cmarkNode.suffixFence
 
 }
 
@@ -24,7 +30,7 @@ public class LatexInline: BaseNode {
 extension LatexInline: CustomDebugStringConvertible {
 
     public var debugDescription: String {
-        return "Code - \(literal ?? "nil")"
+        return "Latex Inline - prefixFence: \(prefixFence ?? "nil"), content: \(literal ?? "nil"), sufficFence: \(suffixFence ?? "nil")"
     }
 
 }
