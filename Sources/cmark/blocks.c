@@ -339,16 +339,6 @@ static cmark_node *finalize(cmark_parser *parser, cmark_node *b) {
       }
       assert(pos < node_content->size);
 
-      if (pos == 0) {
-        b->as.latex.info = NULL;
-      } else {
-        cmark_strbuf tmp = CMARK_BUF_INIT(parser->mem);
-        houdini_unescape_html_f(&tmp, node_content->ptr, pos);
-        cmark_strbuf_trim(&tmp);
-        cmark_strbuf_unescape(&tmp);
-        b->as.latex.info = cmark_strbuf_detach(&tmp);
-      }
-
       if (node_content->ptr[pos] == '\r')
         pos += 1;
       if (node_content->ptr[pos] == '\n')
@@ -1102,7 +1092,14 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
       (*container)->as.latex.fence_length = (matched > 255) ? 255 : matched;
       (*container)->as.latex.fence_offset =
           (int8_t)(parser->first_nonspace - parser->offset);
-      (*container)->as.latex.info = NULL;
+      char fench_char = peek_at(input, parser->first_nonspace);
+
+      (*container)->as.latex.fence_prefix = (unsigned char *)malloc(matched + 1);
+      memset((*container)->as.latex.fence_prefix, fench_char, matched);
+      (*container)->as.latex.fence_prefix[matched] = '\0';
+      
+      (*container)->as.latex.fence_suffix = (*container)->as.latex.fence_prefix;
+
       S_advance_offset(parser, input,
                        parser->first_nonspace + matched - parser->offset,
                        false);

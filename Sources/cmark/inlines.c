@@ -517,6 +517,13 @@ static cmark_node *handle_latex_dollar(subject *subj, int options) {
     cmark_node *node = make_literal(subj, CMARK_NODE_LATEX_INLINE, startpos,
                                     endpos - openticks.len - 1);
     node->len = buf.size;
+    unsigned char* fence = (unsigned char*)malloc(openticks.len + 1);
+    for (int i = 0; i < openticks.len; i++) {
+      fence[i] = '$';
+    }
+    fence[openticks.len] = '\0';
+    node->as.latex.fence_prefix = fence;
+    node->as.latex.fence_suffix = fence;
     node->data = cmark_strbuf_detach(&buf);
     adjust_subj_node_newlines(subj, node, endpos - startpos, openticks.len, options);
     return node;
@@ -970,6 +977,16 @@ static cmark_node *handle_backslash(subject *subj, int options) {
                                         endpos - extra - 1);
         node->len = buf.size;
         node->data = cmark_strbuf_detach(&buf);
+        unsigned char* fence_prefix = (unsigned char*)malloc(3);
+        unsigned char* fence_suffix = (unsigned char*)malloc(3);
+        fence_prefix[0] = '\\';
+        fence_prefix[1] = '(';
+        fence_prefix[2] = '\0';
+        fence_suffix[0] = '\\';
+        fence_suffix[1] = ')';
+        fence_suffix[2] = '\0';
+        node->as.latex.fence_prefix = fence_prefix;
+        node->as.latex.fence_suffix = fence_suffix;
         advance(subj);
         adjust_subj_node_newlines(subj, node, endpos - startpos, extra, options);
         return node;
@@ -992,6 +1009,16 @@ static cmark_node *handle_backslash(subject *subj, int options) {
                                         endpos - extra - 1);
         node->len = buf.size;
         node->data = cmark_strbuf_detach(&buf);
+        unsigned char* fence_prefix = (unsigned char*)malloc(3);
+        unsigned char* fence_suffix = (unsigned char*)malloc(3);
+        fence_prefix[0] = '\\';
+        fence_prefix[1] = '[';
+        fence_prefix[2] = '\0';
+        fence_suffix[0] = '\\';
+        fence_suffix[1] = ']';
+        fence_suffix[2] = '\0';
+        node->as.latex.fence_prefix = fence_prefix;
+        node->as.latex.fence_suffix = fence_suffix;
         advance(subj);
         adjust_subj_node_newlines(subj, node, endpos - startpos, extra, options);
         return node;

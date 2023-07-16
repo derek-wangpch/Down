@@ -114,6 +114,14 @@ public extension CMarkNode {
     var title: String? {
         return String(cString: cmark_node_get_title(self))
     }
+    
+    var prefixFence: String? {
+        return String(cString: cmark_node_get_prefix_fence(self))
+    }
+    
+    var suffixFence: String? {
+        return String(cString: cmark_node_get_suffix_fence(self))
+    }
 }
 
 private extension String {
